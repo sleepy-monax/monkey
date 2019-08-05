@@ -29,6 +29,11 @@ const (
 	TOKEN_LET      = "LET"
 )
 
+var keywords = map[string]TokenType{
+	"fn":  TOKEN_FUNCTION,
+	"let": TOKEN_LET,
+}
+
 type Token struct {
 	Type    TokenType
 	Literal string
@@ -57,31 +62,37 @@ func NewTokenizerState(input string) *TokenizerState {
 		CurrentChar: 1,
 	}
 
-	state.NextChar()
+	state.ReadChar()
 
 	return state
 }
 
+func (state *TokenizerState) NewToken(tokenType TokenType) Token {
+	return Token{
+		Type:   tokenType,
+		Column: state.CurrentColumn,
+		Line:   state.CurrentLine,
+	}
+}
+
 // NewTokenChar create a new token from a char
 func (state *TokenizerState) NewTokenChar(tokenType TokenType, char byte) Token {
-	return Token{
-		Type:    tokenType,
-		Literal: string(char),
-	}
+	token := state.NewToken(tokenType)
+	token.Literal = string(char)
+
+	return token
 }
 
 // NewTokenString create a new token from a string
 func (state *TokenizerState) NewTokenString(tokenType TokenType, literal string) Token {
-	return Token{
-		Type:    tokenType,
-		Literal: literal,
-		Column:  state.CurrentColumn,
-		Line:    state.CurrentLine,
-	}
+	token := state.NewToken(tokenType)
+	token.Literal = literal
+
+	return token
 }
 
-// NextChar get the next char form the input string.
-func (state *TokenizerState) NextChar() {
+// ReadChar get the next char form the input string.
+func (state *TokenizerState) ReadChar() {
 	if state.ReadPosition >= len(state.Input) {
 		state.CurrentChar = 0
 	} else {
@@ -99,9 +110,74 @@ func (state *TokenizerState) NextChar() {
 	state.ReadPosition++
 }
 
-// NextToken get the next token a currentPosition in the input string
+// IsLetter check if the char is a letter.
+func IsLetter(ch byte) bool {
+	return 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z'
+}
+
+// IsIdentifier check if the char is part of a valid identifier.
+func IsIdentifier(char byte) bool {
+	return IsLetter(char) || char == '_'
+}
+
+func IsWitespace(char byte) bool {
+	return char == ' ' || char == '\t' || char == '\n' || char == '\r'
+}
+
+func IsNumber(char byte) bool {
+	return '0' <= char && char <= '9'
+}
+
+func (state *TokenizerState) EatWhitespace() {
+	for IsWitespace(state.CurrentChar) {
+		state.ReadChar()
+	}
+}
+
+// LookupIdentifier chech if the given identifier is a keyword or an identifier.
+func LookupIdentifier(identifier string) TokenType {
+	if tokenType, ok := keywords[identifier]; ok {
+		return tokenType
+	}
+
+	return TOKEN_IDENTIFIER
+}
+
+// ReadIdentifier read the next identifier from the input string.
+func (state *TokenizerState) ReadIdentifier() Token {
+	token := state.NewTokenString(TOKEN_IDENTIFIER, "")
+
+	position := state.Position
+
+	for IsIdentifier(state.CurrentChar) {
+		state.ReadChar()
+	}
+
+	token.Literal = state.Input[position:state.Position]
+	token.Type = LookupIdentifier(token.Literal)
+
+	return token
+}
+
+func (state *TokenizerState) ReadNumber() Token {
+	token := state.NewToken(TOKEN_NUMBER)
+
+	position := state.Position
+
+	for IsNumber(state.CurrentChar) {
+		state.ReadChar()
+	}
+
+	token.Literal = state.Input[position:state.Position]
+
+	return token
+}
+
+// NextToken get the next token a currentPosition in the input string.
 func (state *TokenizerState) NextToken() Token {
-	var token Token
+	state.EatWhitespace()
+
+	token := state.NewTokenChar(TOKEN_ILLEGAL, state.CurrentChar)
 
 	switch state.CurrentChar {
 	case '=':
@@ -126,9 +202,16 @@ func (state *TokenizerState) NextToken() Token {
 		token = state.NewTokenChar(TOKEN_CLOSING_BRACKET, state.CurrentChar)
 	case 0:
 		token = state.NewTokenString(TOKEN_END_OF_FILE, "")
+
+	default:
+		if IsIdentifier(state.CurrentChar) {
+			return state.ReadIdentifier()
+		} else if IsNumber(state.CurrentChar) {
+			return state.ReadNumber()
+		}
 	}
 
-	state.NextChar()
+	state.ReadChar()
 
 	return token
 }
