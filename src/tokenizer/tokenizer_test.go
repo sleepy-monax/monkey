@@ -1,4 +1,4 @@
-package monkey
+package tokenizer
 
 import "testing"
 

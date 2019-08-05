@@ -1,5 +1,6 @@
-package monkey
+package tokenizer
 
+// TokenType is the type of the token
 type TokenType string
 
 const (
@@ -11,18 +12,18 @@ const (
 	TOKEN_NUMBER     = "NUMBER"
 
 	// Operators
-	TOKEN_EQUAL = "="
-	TOKEN_PLUS  = "+"
+	TOKEN_EQUAL = "EQUAL"
+	TOKEN_PLUS  = "PLUS"
 
 	// Delemiters
-	TOKEN_COMMA               = ","
-	TOKEN_SEMICOLON           = ";"
-	TOKEN_OPENING_PARENTHESIS = "("
-	TOKEN_CLOSING_PARENTHESIS = ")"
-	TOKEN_OPENING_BRACE       = "{"
-	TOKEN_CLOSING_BRACE       = "}"
-	TOKEN_OPENING_BRACKET     = "["
-	TOKEN_CLOSING_BRACKET     = "]"
+	TOKEN_COMMA               = "COMMA"
+	TOKEN_SEMICOLON           = "SEMICOLON"
+	TOKEN_OPENING_PARENTHESIS = "OPENING_PARENTHESIS"
+	TOKEN_CLOSING_PARENTHESIS = "CLOSING_PARENTHESIS"
+	TOKEN_OPENING_BRACE       = "OPENING_BRACE"
+	TOKEN_CLOSING_BRACE       = "CLOSING_BRACE"
+	TOKEN_OPENING_BRACKET     = "OPENING_BRACKET"
+	TOKEN_CLOSING_BRACKET     = "CLOSING_BRACKET"
 
 	// Keyword
 	TOKEN_FUNCTION = "FUNCTION"
