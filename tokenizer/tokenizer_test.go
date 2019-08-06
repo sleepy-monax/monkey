@@ -18,6 +18,8 @@ func TestNextToken(t *testing.T) {
 	=+-!*/<>;
 
 	if (true) { return true; } else { return false; }
+
+	let truth = ten ==10!= 5;
 	`
 
 	tests := []struct {
@@ -95,6 +97,17 @@ func TestNextToken(t *testing.T) {
 		{token.False, "false"},
 		{token.Semicolon, ";"},
 		{token.ClosingBrace, "}"},
+
+		// let truth = ten ==10!= 5;
+		{token.Let, "let"},
+		{token.Identifier, "truth"},
+		{token.Assign, "="},
+		{token.Identifier, "ten"},
+		{token.Equal, "=="},
+		{token.Integer, "10"},
+		{token.NotEqual, "!="},
+		{token.Integer, "5"},
+		{token.Semicolon, ";"},
 
 		{token.EOF, ""},
 	}

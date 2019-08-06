@@ -64,6 +64,14 @@ func (state *Tokenizer) readChar() {
 	state.readPosition++
 }
 
+func (state *Tokenizer) peekChar() byte {
+	if state.readPosition >= len(state.input) {
+		return 0
+	}
+
+	return state.input[state.readPosition]
+}
+
 func isLetter(ch byte) bool {
 	return 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z'
 }
@@ -131,13 +139,25 @@ func (state *Tokenizer) NextToken() token.Token {
 
 	switch state.currentChar {
 	case '=':
-		tok = state.newTokenChar(token.Assign, state.currentChar)
+		if state.peekChar() == '=' {
+			char := state.currentChar
+			state.readChar()
+			tok = state.newTokenString(token.Equal, string(char)+string(state.currentChar))
+		} else {
+			tok = state.newTokenChar(token.Assign, state.currentChar)
+		}
 	case '+':
 		tok = state.newTokenChar(token.Plus, state.currentChar)
 	case '-':
 		tok = state.newTokenChar(token.Minus, state.currentChar)
 	case '!':
-		tok = state.newTokenChar(token.Bang, state.currentChar)
+		if state.peekChar() == '=' {
+			char := state.currentChar
+			state.readChar()
+			tok = state.newTokenString(token.NotEqual, string(char)+string(state.currentChar))
+		} else {
+			tok = state.newTokenChar(token.Bang, state.currentChar)
+		}
 	case '*':
 		tok = state.newTokenChar(token.Asterisk, state.currentChar)
 	case '/':

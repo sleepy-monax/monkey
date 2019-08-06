@@ -20,6 +20,8 @@ const (
 	Slash      = "Slash"
 	LessThan   = "LessThan"
 	BiggerThan = "BiggerThan"
+	Equal      = "Equal"
+	NotEqual   = "NotEqual"
 
 	// Delemiters
 	Comma              = "Comma"
@@ -52,14 +54,16 @@ var Keywords = map[string]TokenType{
 }
 
 var Operators = map[string]TokenType{
-	"=": Assign,
-	"+": Plus,
-	"-": Minus,
-	"!": Bang,
-	"*": Asterisk,
-	"/": Slash,
-	"<": LessThan,
-	">": BiggerThan,
+	"=":  Assign,
+	"+":  Plus,
+	"-":  Minus,
+	"!":  Bang,
+	"*":  Asterisk,
+	"/":  Slash,
+	"<":  LessThan,
+	">":  BiggerThan,
+	"==": Equal,
+	"!=": NotEqual,
 }
 
 type Token struct {
