@@ -13,22 +13,32 @@ func TestNextToken(t *testing.T) {
 		x + y;
 	};
 	
-	let result = add(five, ten);`
+	let result = add(five, ten);
+
+	=+-!*/<>;
+
+	if (true) { return true; } else { return false; }
+	`
 
 	tests := []struct {
 		expectedType    token.TokenType
 		expectedLiteral string
 	}{
+		// let five = 5;
 		{token.Let, "let"},
 		{token.Identifier, "five"},
 		{token.Assign, "="},
 		{token.Integer, "5"},
 		{token.Semicolon, ";"},
+
+		// let ten = 10;
 		{token.Let, "let"},
 		{token.Identifier, "ten"},
 		{token.Assign, "="},
 		{token.Integer, "10"},
 		{token.Semicolon, ";"},
+
+		// let add = fn(x, y) { x + y; };
 		{token.Let, "let"},
 		{token.Identifier, "add"},
 		{token.Assign, "="},
@@ -45,6 +55,8 @@ func TestNextToken(t *testing.T) {
 		{token.Semicolon, ";"},
 		{token.ClosingBrace, "}"},
 		{token.Semicolon, ";"},
+
+		// let result = add(five, ten);
 		{token.Let, "let"},
 		{token.Identifier, "result"},
 		{token.Assign, "="},
@@ -55,6 +67,36 @@ func TestNextToken(t *testing.T) {
 		{token.Identifier, "ten"},
 		{token.ClosingParenthesis, ")"},
 		{token.Semicolon, ";"},
+
+		// =+-!*/<>;
+		{token.Assign, "="},
+		{token.Plus, "+"},
+		{token.Minus, "-"},
+		{token.Bang, "!"},
+		{token.Asterisk, "*"},
+		{token.Slash, "/"},
+		{token.LessThan, "<"},
+		{token.BiggerThan, ">"},
+		{token.Semicolon, ";"},
+
+		// if (true) { return true; } else { return false; }
+		{token.If, "if"},
+		{token.OpeningParenthesis, "("},
+		{token.True, "true"},
+		{token.ClosingParenthesis, ")"},
+		{token.OpeningBrace, "{"},
+		{token.Return, "return"},
+		{token.True, "true"},
+		{token.Semicolon, ";"},
+		{token.ClosingBrace, "}"},
+		{token.Else, "else"},
+		{token.OpeningBrace, "{"},
+		{token.Return, "return"},
+		{token.False, "false"},
+		{token.Semicolon, ";"},
+		{token.ClosingBrace, "}"},
+
+		{token.EOF, ""},
 	}
 
 	state := New(input)

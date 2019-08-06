@@ -134,6 +134,18 @@ func (state *Tokenizer) NextToken() token.Token {
 		tok = state.newTokenChar(token.Assign, state.currentChar)
 	case '+':
 		tok = state.newTokenChar(token.Plus, state.currentChar)
+	case '-':
+		tok = state.newTokenChar(token.Minus, state.currentChar)
+	case '!':
+		tok = state.newTokenChar(token.Bang, state.currentChar)
+	case '*':
+		tok = state.newTokenChar(token.Asterisk, state.currentChar)
+	case '/':
+		tok = state.newTokenChar(token.Slash, state.currentChar)
+	case '<':
+		tok = state.newTokenChar(token.LessThan, state.currentChar)
+	case '>':
+		tok = state.newTokenChar(token.BiggerThan, state.currentChar)
 	case ',':
 		tok = state.newTokenChar(token.Comma, state.currentChar)
 	case ';':

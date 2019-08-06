@@ -14,6 +14,12 @@ const (
 	// Operators
 	Assign     = "Assign"
 	Plus       = "Plus"
+	Minus      = "Minus"
+	Bang       = "Bang"
+	Asterisk   = "Asterisk"
+	Slash      = "Slash"
+	LessThan   = "LessThan"
+	BiggerThan = "BiggerThan"
 
 	// Delemiters
 	Comma              = "Comma"
@@ -28,11 +34,32 @@ const (
 	// Keywords
 	Function = "Function"
 	Let      = "Let"
+	True     = "True"
+	False    = "False"
+	If       = "If"
+	Else     = "Else"
+	Return   = "Return"
 )
 
 var Keywords = map[string]TokenType{
-	"fn":  Function,
-	"let": Let,
+	"fn":     Function,
+	"let":    Let,
+	"true":   True,
+	"false":  False,
+	"if":     If,
+	"else":   Else,
+	"return": Return,
+}
+
+var Operators = map[string]TokenType{
+	"=": Assign,
+	"+": Plus,
+	"-": Minus,
+	"!": Bang,
+	"*": Asterisk,
+	"/": Slash,
+	"<": LessThan,
+	">": BiggerThan,
 }
 
 type Token struct {
