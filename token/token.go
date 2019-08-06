@@ -4,30 +4,30 @@ package token
 type TokenType string
 
 const (
-	Illegal = "ILLEGAL"
+	Illegal = "Illegal"
 	EOF     = "EOF"
 
 	// Identifier and literals
-	Identifier = "IDENTIFIER"
-	Integer    = "NUMBER"
+	Identifier = "Identifier"
+	Integer    = "Integer"
 
 	// Operators
-	Assign = "EQUAL"
-	Plus   = "PLUS"
+	Assign     = "Assign"
+	Plus       = "Plus"
 
 	// Delemiters
-	Comma              = "COMMA"
-	Semicolon          = "SEMICOLON"
-	OpeningParenthesis = "OPENING_PARENTHESIS"
-	ClosingParenthesis = "CLOSING_PARENTHESIS"
-	OpeningBrace       = "OPENING_BRACE"
-	ClosingBrace       = "CLOSING_BRACE"
-	OpeningBracket     = "OPENING_BRACKET"
-	ClosingBracket     = "CLOSING_BRACKET"
+	Comma              = "Comma"
+	Semicolon          = "Semicolon"
+	OpeningParenthesis = "OpeningParenthesis"
+	ClosingParenthesis = "ClosingParenthesis"
+	OpeningBrace       = "OpeningBrace"
+	ClosingBrace       = "ClosingBrace"
+	OpeningBracket     = "OpeningBracket"
+	ClosingBracket     = "ClosingBracket"
 
 	// Keywords
-	Function = "FUNCTION"
-	Let      = "LET"
+	Function = "Function"
+	Let      = "Let"
 )
 
 var Keywords = map[string]TokenType{
