@@ -41,16 +41,22 @@ const (
 	If       = "If"
 	Else     = "Else"
 	Return   = "Return"
+	And      = "And"
+	Or       = "Or"
+	Not      = "Not"
 )
 
 var Keywords = map[string]TokenType{
-	"fn":     Function,
-	"let":    Let,
-	"true":   True,
-	"false":  False,
-	"if":     If,
-	"else":   Else,
-	"return": Return,
+	"function": Function,
+	"let":      Let,
+	"true":     True,
+	"false":    False,
+	"if":       If,
+	"else":     Else,
+	"return":   Return,
+	"and":      And,
+	"or":       Or,
+	"not":      Not,
 }
 
 var Operators = map[string]TokenType{

@@ -158,6 +158,7 @@ func (parser *Parser) parseExpressionStatement() *ast.ExpressionStatement {
 
 const (
 	PrecedenceLowest = iota
+	PrecedenceLogic
 	PrecedenceEquals
 	PrecedenceComparator
 	PrecedenceSum
@@ -165,33 +166,64 @@ const (
 	PrecedencePrefix
 )
 
-var precedences = map[token.TokenType]int{
-	token.Equal:    PrecedenceEquals,
-	token.NotEqual: PrecedenceEquals,
-
-	token.LessThan:   PrecedenceComparator,
-	token.BiggerThan: PrecedenceComparator,
-
-	token.Plus:  PrecedenceSum,
-	token.Minus: PrecedenceSum,
-
-	token.Assign: PrecedenceProduct,
-	token.Slash:  PrecedenceProduct,
-}
-
 type (
 	prefixParseFunction func(*Parser) ast.Expression
 	infixParseFunction  func(*Parser, ast.Expression) ast.Expression
 )
 
-var prefixParseFunctions = map[token.TokenType]prefixParseFunction{
-	token.Identifier: parseIdentifierLiteral,
-	token.Integer:    parseIntergerLiteral,
-	token.True:       parseBoolLiteral,
-	token.False:      parseBoolLiteral,
-}
+var precedences map[token.TokenType]int
+var prefixParseFunctions map[token.TokenType]prefixParseFunction
+var infixParseFunctions map[token.TokenType]infixParseFunction
 
-var infixParseFunctions = map[token.TokenType]infixParseFunction{}
+func init() {
+	precedences = map[token.TokenType]int{
+		token.And: PrecedenceLogic,
+		token.Or:  PrecedenceLogic,
+
+		token.Equal:    PrecedenceEquals,
+		token.NotEqual: PrecedenceEquals,
+
+		token.LessThan:   PrecedenceComparator,
+		token.BiggerThan: PrecedenceComparator,
+
+		token.Plus:  PrecedenceSum,
+		token.Minus: PrecedenceSum,
+
+		token.Asterisk: PrecedenceProduct,
+		token.Slash:    PrecedenceProduct,
+
+		token.Bang: PrecedencePrefix,
+	}
+
+	prefixParseFunctions = map[token.TokenType]prefixParseFunction{
+		token.Identifier: parseIdentifierLiteral,
+		token.Integer:    parseIntergerLiteral,
+		token.True:       parseBoolLiteral,
+		token.False:      parseBoolLiteral,
+
+		token.Plus:  parsePrefixOperatorExpression,
+		token.Minus: parsePrefixOperatorExpression,
+
+		token.Not: parsePrefixOperatorExpression,
+	}
+
+	infixParseFunctions = map[token.TokenType]infixParseFunction{
+		token.And: parseInfixOperatorExpression,
+		token.Not: parseInfixOperatorExpression,
+
+		token.Equal:    parseInfixOperatorExpression,
+		token.NotEqual: parseInfixOperatorExpression,
+
+		token.LessThan:   parseInfixOperatorExpression,
+		token.BiggerThan: parseInfixOperatorExpression,
+
+		token.Plus:  parseInfixOperatorExpression,
+		token.Minus: parseInfixOperatorExpression,
+
+		token.Asterisk: parseInfixOperatorExpression,
+		token.Slash:    parseInfixOperatorExpression,
+	}
+}
 
 func (parser *Parser) peekPrecedence() int {
 	if precedence, ok := precedences[parser.peekToken.Type]; ok {
@@ -232,6 +264,44 @@ func (parser *Parser) parseExpression(precedences int) ast.Expression {
 	}
 
 	return leftExp
+}
+
+func parsePostfixOperatorExpression(parser *Parser, left ast.Expression) ast.Expression {
+	expression := &ast.PostfixOperatorExpression{
+		Token:    parser.currentToken,
+		Operator: parser.currentToken.Literal,
+		Left:     left,
+	}
+
+	parser.nextToken()
+
+	return expression
+}
+
+func parseInfixOperatorExpression(parser *Parser, left ast.Expression) ast.Expression {
+	expression := &ast.InfixOperatorExpression{
+		Token:    parser.currentToken,
+		Operator: parser.currentToken.Literal,
+		Left:     left,
+	}
+
+	precedences := parser.currentPrecedence()
+	parser.nextToken()
+	expression.Right = parser.parseExpression(precedences)
+
+	return expression
+}
+
+func parsePrefixOperatorExpression(parser *Parser) ast.Expression {
+	expression := &ast.PrefixOperatorExpression{
+		Token:    parser.currentToken,
+		Operator: parser.currentToken.Literal,
+	}
+
+	parser.nextToken()
+	expression.Right = parser.parseExpression(PrecedencePrefix)
+
+	return expression
 }
 
 /* --- Literals ------------------------------------------------------------- */
