@@ -106,7 +106,7 @@ func (parser *Parser) parseReturnStatement() *ast.ReturnStatement {
 
 	parser.nextToken()
 
-	statement.ReturnValue = parser.parseExpression()
+	statement.Expression = parser.parseExpression()
 
 	if parser.peekTokenIs(token.Semicolon) {
 		parser.nextToken()
@@ -134,15 +134,18 @@ func (parser *Parser) parseBlockStatement() *ast.BlockStatement {
 }
 
 func (parser *Parser) parseExpressionStatement() *ast.ExpressionStatement {
-	return nil
+	stmt := &ast.ExpressionStatement{Token: parser.currentToken}
+	stmt.Expression = parser.parseExpression()
+
+	if parser.peekTokenIs(token.Semicolon) {
+		parser.nextToken()
+	}
+
+	return stmt
 }
 
 /* --- Expression ----------------------------------------------------------- */
 
 func (parser *Parser) parseExpression() ast.Expression {
-	for !parser.peekTokenIs(token.Semicolon) {
-		parser.nextToken()
-	}
-
-	return nil
+	return &ast.IdentifierLiteral{Token: parser.currentToken, Value: string(parser.currentToken.Type)}
 }

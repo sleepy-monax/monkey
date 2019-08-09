@@ -1,6 +1,9 @@
 package ast
 
-import "monkey/token"
+import (
+	"fmt"
+	"monkey/token"
+)
 
 type IdentifierLiteral struct {
 	Token token.Token
@@ -9,6 +12,7 @@ type IdentifierLiteral struct {
 
 func (expression *IdentifierLiteral) expressionNode()      {}
 func (expression *IdentifierLiteral) TokenLiteral() string { return expression.Token.Literal }
+func (expression *IdentifierLiteral) String() string       { return expression.Value }
 
 type BooleanLiteral struct {
 	Token token.Token
@@ -17,6 +21,13 @@ type BooleanLiteral struct {
 
 func (expression *BooleanLiteral) expressionNode()      {}
 func (expression *BooleanLiteral) TokenLiteral() string { return expression.Token.Literal }
+func (expression *BooleanLiteral) String() string {
+	if expression.Value {
+		return "true"
+	} else {
+		return "false"
+	}
+}
 
 type IntegerLiteral struct {
 	Token token.Token
@@ -25,6 +36,7 @@ type IntegerLiteral struct {
 
 func (expression *IntegerLiteral) expressionNode()      {}
 func (expression *IntegerLiteral) TokenLiteral() string { return expression.Token.Literal }
+func (expression *IntegerLiteral) String() string       { return fmt.Sprintf("%d", expression.Value) }
 
 type FunctionLiteral struct {
 	Token      token.Token
@@ -34,3 +46,6 @@ type FunctionLiteral struct {
 
 func (expression *FunctionLiteral) expressionNode()      {}
 func (expression *FunctionLiteral) TokenLiteral() string { return expression.Token.Literal }
+func (expression *FunctionLiteral) String() string {
+	return ""
+}

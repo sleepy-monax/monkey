@@ -53,9 +53,6 @@ func TestLetStatement(t *testing.T) {
 
 		statement := program.Statements[0]
 
-		t.Logf("%+v", program)
-		t.FailNow()
-
 		if statement.TokenLiteral() != "let" {
 			t.Errorf("s.TokenLiteral() not 'let'. got=%q", statement.TokenLiteral())
 		}
@@ -99,6 +96,29 @@ func TestReturnStatement(t *testing.T) {
 
 		if !ok {
 			t.Errorf("statement not *ast.returnStatement. got=%T", statement)
+		}
+	}
+}
+
+func TestExpressionStatement(t *testing.T) {
+	tests := []struct {
+		input         string
+		expectedValue interface{}
+	}{
+		{"5;", 5},
+		{"true;", true},
+		{"foobar;", "foobar"},
+	}
+
+	for _, test := range tests {
+		program := testParseProgram(t, test.input, 1)
+
+		statement := program.Statements[0]
+
+		_, ok := statement.(*ast.ExpressionStatement)
+
+		if !ok {
+			t.Errorf("statement not *ast.ExpressionStatement. got=%T", statement)
 		}
 	}
 }

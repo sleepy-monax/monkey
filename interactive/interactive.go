@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"monkey/token"
+	"monkey/parser"
 	"monkey/tokenizer"
 )
 
@@ -23,10 +23,10 @@ func Start(in io.Reader, out io.Writer) {
 		}
 
 		line := scanner.Text()
-		state := tokenizer.New(line)
+		tok := tokenizer.New(line)
+		pars := parser.New(tok)
+		prog := pars.Parse()
 
-		for tok := state.NextToken(); tok.Type != token.EOF; tok = state.NextToken() {
-			fmt.Printf("%+v\n", tok)
-		}
+		fmt.Printf("%+s\n", prog.String())
 	}
 }
