@@ -5,6 +5,8 @@ import (
 	"monkey/token"
 )
 
+/* --- Identifier Literal --------------------------------------------------- */
+
 type IdentifierLiteral struct {
 	Token token.Token
 	Value string
@@ -12,7 +14,15 @@ type IdentifierLiteral struct {
 
 func (expression *IdentifierLiteral) expressionNode()      {}
 func (expression *IdentifierLiteral) TokenLiteral() string { return expression.Token.Literal }
-func (expression *IdentifierLiteral) String() string       { return expression.Value }
+func (expression *IdentifierLiteral) String() string {
+	if expression == nil {
+		return ""
+	}
+
+	return expression.Value
+}
+
+/* --- Boolean Literal ------------------------------------------------------ */
 
 type BooleanLiteral struct {
 	Token token.Token
@@ -22,6 +32,10 @@ type BooleanLiteral struct {
 func (expression *BooleanLiteral) expressionNode()      {}
 func (expression *BooleanLiteral) TokenLiteral() string { return expression.Token.Literal }
 func (expression *BooleanLiteral) String() string {
+	if expression == nil {
+		return ""
+	}
+
 	if expression.Value {
 		return "true"
 	} else {
@@ -29,14 +43,24 @@ func (expression *BooleanLiteral) String() string {
 	}
 }
 
+/* --- Integer Literal ------------------------------------------------------ */
+
 type IntegerLiteral struct {
 	Token token.Token
-	Value int
+	Value int64
 }
 
 func (expression *IntegerLiteral) expressionNode()      {}
 func (expression *IntegerLiteral) TokenLiteral() string { return expression.Token.Literal }
-func (expression *IntegerLiteral) String() string       { return fmt.Sprintf("%d", expression.Value) }
+func (expression *IntegerLiteral) String() string {
+	if expression == nil {
+		return ""
+	}
+
+	return fmt.Sprintf("%d", expression.Value)
+}
+
+/* --- Function Literal ----------------------------------------------------- */
 
 type FunctionLiteral struct {
 	Token      token.Token
@@ -47,5 +71,9 @@ type FunctionLiteral struct {
 func (expression *FunctionLiteral) expressionNode()      {}
 func (expression *FunctionLiteral) TokenLiteral() string { return expression.Token.Literal }
 func (expression *FunctionLiteral) String() string {
+	if expression == nil {
+		return ""
+	}
+
 	return ""
 }

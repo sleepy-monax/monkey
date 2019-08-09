@@ -15,11 +15,17 @@ func (p *Program) TokenLiteral() string {
 }
 
 func (p *Program) String() string {
+	if p == nil {
+		return ""
+	}
+
 	var out bytes.Buffer
 
 	for _, s := range p.Statements {
-		out.WriteString(s.String())
-		out.WriteString(";")
+		if s != nil {
+			out.WriteString(s.String())
+			out.WriteString(";")
+		}
 	}
 
 	return out.String()

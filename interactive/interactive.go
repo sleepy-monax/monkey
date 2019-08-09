@@ -27,6 +27,16 @@ func Start(in io.Reader, out io.Writer) {
 		pars := parser.New(tok)
 		prog := pars.Parse()
 
+		errors := pars.Errors
+		if len(errors) != 0 {
+			fmt.Printf("\033[31mParser has %d errors\033[0m\n", len(errors))
+
+			for _, msg := range errors {
+				fmt.Printf("- %s\n", msg)
+			}
+
+		}
+
 		fmt.Printf("%+s\n", prog.String())
 	}
 }

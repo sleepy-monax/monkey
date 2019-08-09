@@ -26,7 +26,7 @@ func testParseProgram(t *testing.T, input string, expectedStatements int) *ast.P
 }
 
 func checkParserErrors(t *testing.T, parser *Parser) {
-	errors := parser.errors
+	errors := parser.Errors
 	if len(errors) != 0 {
 		t.Errorf("Parser has %d errors", len(errors))
 
