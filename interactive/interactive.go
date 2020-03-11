@@ -8,7 +8,7 @@ import (
 	"monkey/tokenizer"
 )
 
-const InteractivePrompt = ">>"
+const InteractivePrompt = " -> "
 
 func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
@@ -37,6 +37,6 @@ func Start(in io.Reader, out io.Writer) {
 
 		}
 
-		fmt.Printf("%+s\n", prog.String())
+		fmt.Printf("%v\n", prog)
 	}
 }

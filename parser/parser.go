@@ -6,9 +6,13 @@ import (
 	"monkey/token"
 	"monkey/tokenizer"
 	"strconv"
+	"testing"
 )
 
 type Parser struct {
+	depth int
+	t     *testing.T
+
 	tokenizer    *tokenizer.Tokenizer
 	Errors       []string
 	currentToken token.Token
@@ -21,10 +25,23 @@ func New(tokenizer *tokenizer.Tokenizer) *Parser {
 	parser.nextToken()
 	parser.nextToken()
 
+	parser.depth = 0
+	parser.t = nil
+
+	return parser
+}
+
+func NewWithTest(tokenizer *tokenizer.Tokenizer, t *testing.T) *Parser {
+	parser := New(tokenizer)
+
+	parser.t = t
+
 	return parser
 }
 
 func (parser *Parser) Parse() *ast.Program {
+	parser.trace("Parsing")
+
 	program := &ast.Program{}
 	program.Statements = []ast.Statement{}
 
@@ -37,6 +54,8 @@ func (parser *Parser) Parse() *ast.Program {
 
 		parser.nextToken()
 	}
+
+	parser.untrace("Parse")
 
 	return program
 }
@@ -51,7 +70,16 @@ func (parser *Parser) expectPeek(t token.TokenType) bool {
 		parser.nextToken()
 		return true
 	} else {
-		parser.errorf(parser.peekToken, "expected next token be %s, got %s instead", t, parser.peekToken.Type)
+		parser.errorf(parser.peekToken, "expected token after %s be %s, got %s instead", parser.currentToken.Type, t, parser.peekToken.Type)
+		return false
+	}
+}
+
+func (parser *Parser) expectCurrent(t token.TokenType) bool {
+	if parser.currentTokenIs(t) {
+		return true
+	} else {
+		parser.errorf(parser.peekToken, "expected token be %s, got %s instead", t, parser.currentToken.Type)
 		return false
 	}
 }
@@ -76,27 +104,47 @@ func (parser *Parser) error(tok token.Token, msg string) {
 /* --- Statements ----------------------------------------------------------- */
 
 func (parser *Parser) parseStatement() ast.Statement {
+	parser.trace("parseStatement")
+
+	var statement ast.Statement = nil
+
 	if parser.currentTokenIs(token.Let) {
-		return parser.parseLetStatement()
+		statement = parser.parseLetStatement()
 	} else if parser.currentTokenIs(token.Return) {
-		return parser.parseReturnStatement()
-	} else if parser.currentTokenIs(token.OpeningBracket) {
-		return parser.parseBlockStatement()
+		statement = parser.parseReturnStatement()
+	} else if parser.currentTokenIs(token.OpeningBrace) {
+		statement = parser.parseBlockStatement()
 	} else {
-		return parser.parseExpressionStatement()
+		statement = parser.parseExpressionStatement()
 	}
+
+	if !parser.currentTokenIs(token.Semicolon) {
+		parser.errorf(parser.currentToken, "Expected %s not %s at end of statement", token.Semicolon, parser.currentToken.Type)
+	}
+
+	parser.untrace("parseStatement")
+
+	return statement
 }
 
 func (parser *Parser) parseLetStatement() *ast.LetStatement {
+	parser.trace("parseLetStatement")
+
 	statement := &ast.LetStatement{Token: parser.currentToken}
 
 	if !parser.expectPeek(token.Identifier) {
+
+		parser.untrace("parseLetStatement")
+
 		return nil
 	}
 
 	statement.Identifier = &ast.IdentifierLiteral{Token: parser.currentToken, Value: parser.currentToken.Literal}
 
 	if !parser.expectPeek(token.Assign) {
+
+		parser.untrace("parseLetStatement")
+
 		return nil
 	} else {
 		parser.nextToken()
@@ -108,10 +156,14 @@ func (parser *Parser) parseLetStatement() *ast.LetStatement {
 		parser.nextToken()
 	}
 
+	parser.untrace("parseLetStatement")
+
 	return statement
 }
 
 func (parser *Parser) parseReturnStatement() *ast.ReturnStatement {
+	parser.trace("parseReturnStatement")
+
 	statement := &ast.ReturnStatement{Token: parser.currentToken}
 
 	parser.nextToken()
@@ -122,15 +174,21 @@ func (parser *Parser) parseReturnStatement() *ast.ReturnStatement {
 		parser.nextToken()
 	}
 
+	parser.untrace("parseReturnStatement")
+
 	return statement
 }
 
 func (parser *Parser) parseBlockStatement() *ast.BlockStatement {
+	parser.trace("parseBlockStatement")
+
 	block := &ast.BlockStatement{Token: parser.currentToken}
 
 	block.Statements = []ast.Statement{}
 
-	for parser.currentToken.Type != token.EOF {
+	parser.nextToken()
+
+	for parser.currentToken.Type != token.EOF && parser.currentToken.Type != token.ClosingBrace {
 		stmt := parser.parseStatement()
 
 		if stmt != nil {
@@ -140,16 +198,22 @@ func (parser *Parser) parseBlockStatement() *ast.BlockStatement {
 		parser.nextToken()
 	}
 
+	parser.untrace("parseBlockStatement")
+
 	return block
 }
 
 func (parser *Parser) parseExpressionStatement() *ast.ExpressionStatement {
+	parser.trace("parseExpressionStatement")
+
 	stmt := &ast.ExpressionStatement{Token: parser.currentToken}
 	stmt.Expression = parser.parseExpression(PrecedenceLowest)
 
 	if parser.peekTokenIs(token.Semicolon) {
 		parser.nextToken()
 	}
+
+	parser.untrace("parseExpressionStatement")
 
 	return stmt
 }
@@ -200,11 +264,15 @@ func init() {
 		token.Integer:    parseIntergerLiteral,
 		token.True:       parseBoolLiteral,
 		token.False:      parseBoolLiteral,
+		token.Function:   parseFunctionLiteral,
 
+		token.Not:   parsePrefixOperatorExpression,
 		token.Plus:  parsePrefixOperatorExpression,
 		token.Minus: parsePrefixOperatorExpression,
 
-		token.Not: parsePrefixOperatorExpression,
+		token.OpeningParenthesis: parseGroupedExpression,
+		token.If:                 parseIfExpression,
+		token.While:              parseWhileExpression,
 	}
 
 	infixParseFunctions = map[token.TokenType]infixParseFunction{
@@ -242,10 +310,20 @@ func (parser *Parser) currentPrecedence() int {
 }
 
 func (parser *Parser) parseExpression(precedences int) ast.Expression {
+	parser.trace("parseExpression")
+
+	if parser.currentTokenIs(token.Semicolon) {
+
+		parser.untrace("parseExpression")
+		return nil
+	}
+
 	prefixParse := prefixParseFunctions[parser.currentToken.Type]
 
 	if prefixParse == nil {
 		parser.errorf(parser.currentToken, "no prefix parse function for %s found", parser.currentToken.Type)
+
+		parser.untrace("parseExpression")
 		return nil
 	}
 
@@ -255,6 +333,9 @@ func (parser *Parser) parseExpression(precedences int) ast.Expression {
 		infixParse := infixParseFunctions[parser.peekToken.Type]
 
 		if infixParse == nil {
+			parser.errorf(parser.peekToken, "no infix parse function for %s found", parser.peekToken.Type)
+
+			parser.untrace("parseExpression")
 			return leftExp
 		}
 
@@ -263,7 +344,129 @@ func (parser *Parser) parseExpression(precedences int) ast.Expression {
 		leftExp = infixParse(parser, leftExp)
 	}
 
+	parser.untrace("parseExpression")
 	return leftExp
+}
+
+func parseGroupedExpression(parser *Parser) ast.Expression {
+	parser.trace("parseGroupedExpression")
+
+	parser.nextToken()
+
+	exp := parser.parseExpression(PrecedenceLowest)
+
+	if !parser.expectPeek(token.ClosingParenthesis) {
+
+		parser.untrace("parseGroupedExpression")
+		return nil
+	} else {
+
+		parser.untrace("parseGroupedExpression")
+		return exp
+	}
+}
+
+func parseIfExpression(parser *Parser) ast.Expression {
+	parser.trace("parseIfExpression")
+
+	expression := &ast.IfExpression{Token: parser.currentToken}
+
+	if !parser.expectPeek(token.OpeningParenthesis) {
+		parser.untrace("parseIfExpression")
+		return nil
+	}
+
+	parser.nextToken()
+
+	expression.Condition = parser.parseExpression(PrecedenceLowest)
+
+	if !parser.expectPeek(token.ClosingParenthesis) {
+		parser.untrace("parseIfExpression")
+		return nil
+	}
+
+	if !parser.expectPeek(token.OpeningBrace) {
+		parser.untrace("parseIfExpression")
+		return nil
+	}
+
+	expression.Consequence = parser.parseBlockStatement()
+
+	if parser.peekTokenIs(token.Else) {
+		parser.nextToken()
+
+		if !parser.expectPeek(token.OpeningBrace) {
+			parser.untrace("parseIfExpression")
+			return nil
+		}
+
+		expression.Alternative = parser.parseBlockStatement()
+	}
+
+	parser.untrace("parseIfExpression")
+	return expression
+}
+
+func parseWhileExpression(parser *Parser) ast.Expression {
+	parser.trace("parseWhileExpression")
+
+	expression := &ast.WhileExpression{Token: parser.currentToken}
+
+	if !parser.expectPeek(token.OpeningParenthesis) {
+		parser.untrace("parseWhileExpression")
+		return nil
+	}
+
+	parser.nextToken()
+
+	expression.Condition = parser.parseExpression(PrecedenceLowest)
+
+	if !parser.expectPeek(token.ClosingParenthesis) {
+		parser.untrace("parseWhileExpression")
+		return nil
+	}
+
+	if !parser.expectPeek(token.OpeningBrace) {
+		parser.untrace("parseWhileExpression")
+		return nil
+	}
+
+	expression.Body = parser.parseBlockStatement()
+
+	parser.untrace("parseWhileExpression")
+	return expression
+}
+
+func parsePrefixOperatorExpression(parser *Parser) ast.Expression {
+	parser.trace("parsePrefixOperatorExpression")
+
+	expression := &ast.PrefixOperatorExpression{
+		Token:    parser.currentToken,
+		Operator: parser.currentToken.Literal,
+	}
+
+	parser.nextToken()
+	expression.Right = parser.parseExpression(PrecedencePrefix)
+
+	parser.untrace("parsePrefixOperatorExpression")
+	return expression
+}
+
+func parseInfixOperatorExpression(parser *Parser, left ast.Expression) ast.Expression {
+	parser.trace("parseInfixOperatorExpression")
+
+	expression := &ast.InfixOperatorExpression{
+		Token:    parser.currentToken,
+		Operator: parser.currentToken.Literal,
+		Left:     left,
+	}
+
+	precedences := parser.currentPrecedence()
+	parser.nextToken()
+	expression.Right = parser.parseExpression(precedences)
+
+	parser.untrace("parseInfixOperatorExpression")
+	return expression
 }
 
 func parsePostfixOperatorExpression(parser *Parser, left ast.Expression) ast.Expression {
@@ -278,30 +481,9 @@ func parsePostfixOperatorExpression(parser *Parser, left ast.Expression) ast.Exp
 	return expression
 }
 
-func parseInfixOperatorExpression(parser *Parser, left ast.Expression) ast.Expression {
-	expression := &ast.InfixOperatorExpression{
-		Token:    parser.currentToken,
-		Operator: parser.currentToken.Literal,
-		Left:     left,
-	}
-
-	precedences := parser.currentPrecedence()
-	parser.nextToken()
-	expression.Right = parser.parseExpression(precedences)
-
-	return expression
-}
-
-func parsePrefixOperatorExpression(parser *Parser) ast.Expression {
-	expression := &ast.PrefixOperatorExpression{
-		Token:    parser.currentToken,
-		Operator: parser.currentToken.Literal,
-	}
-
-	parser.nextToken()
-	expression.Right = parser.parseExpression(PrecedencePrefix)
-
-	return expression
+func unexpectedInfixToken(parser *Parser, left ast.Expression) ast.Expression {
+	parser.errorf(parser.currentToken, "unexpected infix token %s", parser.currentToken.Type)
+	return nil
 }
 
 /* --- Literals ------------------------------------------------------------- */
@@ -325,4 +507,62 @@ func parseBoolLiteral(parser *Parser) ast.Expression {
 	} else {
 		return &ast.BooleanLiteral{Token: parser.currentToken, Value: false}
 	}
+}
+
+func parseFunctionLiteral(parser *Parser) ast.Expression {
+	parser.trace("parseFunctionLiteral")
+
+	function := &ast.FunctionLiteral{Token: parser.currentToken}
+
+	if !parser.expectPeek(token.OpeningParenthesis) {
+		parser.untrace("parseFunctionLiteral")
+		return nil
+	}
+
+	parser.nextToken()
+
+	function.Parameters = parser.parseFunctionParameters()
+
+	if !parser.expectPeek(token.ClosingParenthesis) {
+		parser.untrace("parseFunctionLiteral")
+		return nil
+	}
+
+	if !parser.expectPeek(token.OpeningBrace) {
+		parser.untrace("parseFunctionLiteral")
+		return nil
+	}
+
+	function.Body = parser.parseBlockStatement()
+
+	parser.untrace("parseFunctionLiteral")
+	return function
+}
+
+func (parser *Parser) parseFunctionParameters() []*ast.IdentifierLiteral {
+	parser.trace("parseFunctionParameters")
+
+	identifiers := []*ast.IdentifierLiteral{}
+
+	for !parser.peekTokenIs(token.ClosingParenthesis) && parser.expectCurrent(token.Identifier) {
+		identifiers = append(identifiers, &ast.IdentifierLiteral{Token: parser.currentToken, Value: parser.currentToken.Literal})
+
+		parser.nextToken()
+
+		if parser.currentTokenIs(token.Comma) {
+			parser.nextToken()
+		}
+	}
+
+	if parser.currentTokenIs(token.Identifier) {
+		identifiers = append(identifiers, &ast.IdentifierLiteral{Token: parser.currentToken, Value: parser.currentToken.Literal})
+	}
+
+	if parser.currentTokenIs(token.ClosingParenthesis) {
+		parser.untrace("parseFunctionParameters")
+		return nil
+	}
+
+	parser.untrace("parseFunctionParameters")
+	return identifiers
 }

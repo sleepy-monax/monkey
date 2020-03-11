@@ -1,6 +1,7 @@
 package ast
 
 import (
+	"bytes"
 	"fmt"
 	"monkey/token"
 )
@@ -75,5 +76,24 @@ func (expression *FunctionLiteral) String() string {
 		return ""
 	}
 
-	return ""
+	var out bytes.Buffer
+	out.WriteString(expression.TokenLiteral())
+
+	out.WriteString("(")
+
+	for i, param := range expression.Parameters {
+		out.WriteString(param.String())
+
+		if i < len(expression.Parameters)-1 {
+			out.WriteString(",")
+		}
+	}
+
+	out.WriteString(")")
+
+	if expression.Body != nil {
+		out.WriteString(expression.Body.String())
+	}
+
+	return out.String()
 }

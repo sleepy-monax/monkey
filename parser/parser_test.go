@@ -6,9 +6,24 @@ import (
 	"testing"
 )
 
+func TestParser(t *testing.T) {
+	testParseExpect(t, "a + b;", "(a + b);", 1)
+	testParseExpect(t, "a + b + c;", "((a + b) + c);", 1)
+	testParseExpect(t, "a + b * c;", "(a + (b * c));", 1)
+	testParseExpect(t, "(a + b) * c;", "((a + b) * c);", 1)
+
+	testParseExpect(t, "let a = 10;", "let a = 10;", 1)
+
+	testParseExpect(t, "function (){ doStuff; };", "function(){doStuff;};", 1)
+	testParseExpect(t, "function (a){ return a; };", "function(a){return a;};", 1)
+	testParseExpect(t, "function (a, b){ return a + b; };", "function(a,b){return (a + b);};", 1)
+
+	testParseExpectError(t, "(a+b)e;")
+}
+
 func testParseProgram(t *testing.T, input string, expectedStatements int) *ast.Program {
 	tok := tokenizer.New(input)
-	p := New(tok)
+	p := NewWithTest(tok, t)
 
 	program := p.Parse()
 
@@ -25,6 +40,29 @@ func testParseProgram(t *testing.T, input string, expectedStatements int) *ast.P
 	return program
 }
 
+func testParseExpect(t *testing.T, input string, output string, expectedStatements int) {
+	t.Logf("--- testParseExpect '" + input + "' expect '" + output + "' ---")
+
+	program := testParseProgram(t, input, expectedStatements)
+
+	if program.String() != output {
+		t.Errorf("testParseExpect failled expected '%s' to be '%s' got '%s'", input, output, program.String())
+	}
+}
+
+func testParseExpectError(t *testing.T, input string) {
+	t.Logf("--- testParseExpectError '" + input + "' ---")
+
+	tok := tokenizer.New(input)
+	p := NewWithTest(tok, t)
+
+	program := p.Parse()
+
+	if len(p.Errors) == 0 {
+		t.Errorf("testParseExpectError failled expected '%s' to be erroneous, got '%s'", input, program.String())
+	}
+}
+
 func checkParserErrors(t *testing.T, parser *Parser) {
 	errors := parser.Errors
 	if len(errors) != 0 {
@@ -32,93 +70,6 @@ func checkParserErrors(t *testing.T, parser *Parser) {
 
 		for _, msg := range errors {
 			t.Errorf("parser error: %q", msg)
-		}
-
-		t.FailNow()
-	}
-}
-
-func TestLetStatement(t *testing.T) {
-	tests := []struct {
-		input              string
-		expectedIdentifier string
-	}{
-		{"let x = 5;", "x"},
-		{"let y = 10;", "y"},
-		{"let foobar = 838383;", "foobar"},
-	}
-
-	for _, test := range tests {
-		program := testParseProgram(t, test.input, 1)
-
-		statement := program.Statements[0]
-
-		if statement.TokenLiteral() != "let" {
-			t.Errorf("s.TokenLiteral() not 'let'. got=%q", statement.TokenLiteral())
-		}
-
-		letStatement, ok := statement.(*ast.LetStatement)
-
-		if !ok {
-			t.Errorf("statement not *ast.LetStatement. got=%T", statement)
-		}
-
-		if letStatement.Identifier.Value != test.expectedIdentifier {
-			t.Errorf("letStmt.Name.Value not '%s'. got=%s", test.expectedIdentifier, letStatement.Identifier.Value)
-		}
-
-		if letStatement.Identifier.TokenLiteral() != test.expectedIdentifier {
-			t.Errorf("letStmt.Name.TokenLiteral() not '%s'. got=%s", test.expectedIdentifier, letStatement.Identifier.TokenLiteral())
-		}
-	}
-}
-
-func TestReturnStatement(t *testing.T) {
-	tests := []struct {
-		input         string
-		expectedValue interface{}
-	}{
-		{"return 5;", 5},
-		{"return true;", true},
-		{"return foobar;", "foobar"},
-	}
-
-	for _, test := range tests {
-		program := testParseProgram(t, test.input, 1)
-
-		statement := program.Statements[0]
-
-		if statement.TokenLiteral() != "return" {
-			t.Errorf("s.TokenLiteral() not 'return'. got=%q", statement.TokenLiteral())
-		}
-
-		_, ok := statement.(*ast.ReturnStatement)
-
-		if !ok {
-			t.Errorf("statement not *ast.returnStatement. got=%T", statement)
-		}
-	}
-}
-
-func TestExpressionStatement(t *testing.T) {
-	tests := []struct {
-		input         string
-		expectedValue interface{}
-	}{
-		{"5;", 5},
-		{"true;", true},
-		{"foobar;", "foobar"},
-	}
-
-	for _, test := range tests {
-		program := testParseProgram(t, test.input, 1)
-
-		statement := program.Statements[0]
-
-		_, ok := statement.(*ast.ExpressionStatement)
-
-		if !ok {
-			t.Errorf("statement not *ast.ExpressionStatement. got=%T", statement)
 		}
 	}
 }
